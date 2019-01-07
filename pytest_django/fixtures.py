@@ -3,6 +3,7 @@
 from __future__ import with_statement
 
 import os
+import warnings
 
 import pytest
 
@@ -91,7 +92,7 @@ def django_db_setup(
 
     with django_db_blocker.unblock():
         db_cfg = setup_databases(
-            verbosity=pytest.config.option.verbose,
+            verbosity=request.config.option.verbose,
             interactive=False,
             **setup_databases_args
         )
@@ -100,7 +101,7 @@ def django_db_setup(
         with django_db_blocker.unblock():
             teardown_databases(
                 db_cfg,
-                verbosity=pytest.config.option.verbose,
+                verbosity=request.config.option.verbose,
             )
 
     if not django_db_keepdb:
@@ -182,7 +183,7 @@ def transactional_db(request, django_db_setup, django_db_blocker):
     ``transactional_db``, ``django_db_reset_sequences``.
     """
     if 'django_db_reset_sequences' in request.funcargnames:
-        request.getfuncargvalue('django_db_reset_sequences')
+        request.getfixturevalue('django_db_reset_sequences')
     _django_db_fixture_helper(request, django_db_blocker,
                               transactional=True)
 
@@ -340,10 +341,10 @@ def live_server(request):
         if django.VERSION >= (1, 11):
             ports = addr.split(':')[1]
             if '-' in ports or ',' in ports:
-                request.config.warn('D001',
-                                    'Specifying multiple live server ports is not supported '
-                                    'in Django 1.11. This will be an error in a future '
-                                    'pytest-django release.')
+                warnings.warn(pytest.PytestWarning(
+                    'Specifying multiple live server ports is not supported '
+                    'in Django 1.11. This will be an error in a future '
+                    'pytest-django release.'))
 
     if not addr:
         if django.VERSION < (1, 11):
